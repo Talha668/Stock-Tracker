@@ -1,0 +1,22 @@
+Django
+psycopg2-binary
+djangorestframework
+django-cors-headers
+python-decouple
+celery
+redis
+requests
+channels
+channels-redis
+django-celery-beat
+yfinance
+pandas
+django-json-widget
+python-dotenv
+
+
+# Commands to start run this project(you have to put the first 1 in linux and then the last 3 in 3 separate terminals in your IDE)
+# $ sudo service redis-server
+# celery -A tracker beat --loglevel=info --scheduler celery.beat.PersistentScheduler
+# celery -A tracker worker --pool=threads --concurrency=2 --loglevel=info
+# python manage.py runserver

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ portfolio.name }} - Portfolio</title>
+    <style>
+        .portfolio-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .summary-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+        .holdings-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .holdings-table th { background: #f8f9fa; padding: 15px; text-align: left; }
+        .holdings-table td { padding: 15px; border-bottom: 1px solid #dee2e6; }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="portfolio-container">
+        <div class="summary-card">
+            <h1>{{ portfolio.name }}</h1>
+            <p>{{ portfolio.description }}</p>
+            <div id="portfolio-summary"></div>
+        </div>
+        
+        <table class="holdings-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Quantity</th>
+                    <th>Avg Price</th>
+                    <th>Current Price</th>
+                    <th>Invested</th>
+                    <th>Current Value</th>
+                    <th>P/L</th>
+                    <th>P/L %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for holding in holdings %}
+                <tr>
+                    <td><strong>{{ holding.asset.symbol }}</strong><br><small>{{ holding.asset.name }}</small></td>
+                    <td>{{ holding.quantity }}</td>
+                    <td>{{ holding.average_price|floatformat:2 }}</td>
+                    <td id="price-{{ holding.asset.symbol }}">--</td>
+                    <td>{{ holding.invested_amount|floatformat:2 }}</td>
+                    <td id="value-{{ holding.asset.symbol }}">--</td>
+                    <td id="pl-{{ holding.asset.symbol }}" class="positive">--</td>
+                    <td id="plpct-{{ holding.asset.symbol }}" class="positive">--</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        // WebSocket connection for real-time updates
+        const ws = new WebSocket('ws://localhost:8000/ws/prices/');
+        
+        ws.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'price_update') {
+                updateHolding(data.symbol, data.price);
+            }
+        };
+        
+        function updateHolding(symbol, price) {
+            const priceEl = document.getElementById(`price-${symbol}`);
+            const valueEl = document.getElementById(`value-${symbol}`);
+            const plEl = document.getElementById(`pl-${symbol}`);
+            const plpctEl = document.getElementById(`plpct-${symbol}`);
+            
+            if (priceEl) {
+                priceEl.textContent = parseFloat(price).toFixed(2);
+                
+                // Get the row
+                const row = priceEl.closest('tr');
+                const quantity = parseFloat(row.cells[1].textContent);
+                const avgPrice = parseFloat(row.cells[2].textContent);
+                const invested = parseFloat(row.cells[4].textContent);
+                
+                const currentValue = quantity * parseFloat(price);
+                const pl = currentValue - invested;
+                const plpct = (pl / invested) * 100;
+                
+                valueEl.textContent = currentValue.toFixed(2);
+                plEl.textContent = pl.toFixed(2);
+                plpctEl.textContent = plpct.toFixed(2) + '%';
+                
+                plEl.className = pl >= 0 ? 'positive' : 'negative';
+                plpctEl.className = plpct >= 0 ? 'positive' : 'negative';
+            }
+        }
+    </script>
+</body>
+</html>
